@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuaderno Interactivo: Efecto Doppler | Msc. Néstor Montoya</title>
+
+    <!-- 
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║  ✨ CUADERNO INTERACTIVO MAESTRO - PLANTILLA DE ALTA GAMA (PHYSICS ENGINE)   ║
+    ║  🎨 Diseño: Glassmorphism + Neumorphism + Paper UI                           ║
+    ║  🛠️ Tech: HTML5, CSS3, JS Vanilla, Canvas API, MathJax                       ║
+    ║  📱 Responsive: Mobile First Pattern                                         ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    -->
+
+    <!-- Fuentes y Estilos Externos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Indie+Flower&family=Courier+Prime:wght@700&display=swap"
+        rel="stylesheet">
+
+    <!-- Librerías de Cálculo y Gráficos -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.core.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.all.min.js"></script>
+    <script defer src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script defer src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Configuración MathJax (LaTeX) -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' },
+            startup: { typeset: false }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js"></script>
+
+    <style>
+        /* =========================================
+           1. SISTEMA DE DISEÑO (DESIGN TOKENS)
+           ========================================= */
+        :root {
+            /* Paleta de Colores "Vibrant Science" */
+            --bg-body: #eef2f6;
+            /* Fondo general */
+            --paper-color: #ffffff;
+            /* Color de las hojas */
+            --paper-line: #e3e8ee;
+            /* Líneas de la cuadrícula de fondo */
+
+            --primary: #4361ee;
+            /* Azul vibrante (Principal) */
+            --primary-dark: #3046b5;
+            /* Azul oscuro (Textos fuertes) */
+            --secondary: #7209b7;
+            /* Violeta (Subtítulos, acentos) */
+            --accent: #f72585;
+            /* Magenta (Llamadas a la acción, destacados) */
+            --success: #4cc9f0;
+            /* Cyan (Ejemplos, notas positivas) */
+            --warning: #ff9f1c;
+            /* Naranja (Advertencias, notas) */
+
+            --text-main: #2b2d42;
+            /* Texto principal casi negro */
+            --text-muted: #8d99ae;
+            /* Texto secundario gris */
+
+            /* Sombras y Efectos "Clay" & "Glass" */
+            --shadow-dark: 6px 6px 16px rgba(163, 177, 198, 0.3);
+            --clay-shadow: 8px 8px 16px rgba(163, 177, 198, 0.4), -8px -8px 16px rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+            --grid-color-minor: rgba(160, 160, 160, 0.2);
+            --grid-color-major: rgba(120, 120, 120, 0.3);
+        }
+
+        body.dark-mode {
+            /* Paleta "Deep Space" para modo oscuro */
+            --bg-body: #10101a;
+            --paper-color: #1e1e2e;
+            --paper-line: #2a2a3c;
+
+            --primary: #5c7cfa;
+            --primary-dark: #91a7ff;
+            --text-main: #e2e2e2;
+            --text-muted: #a6a6c3;
+
+            --shadow-dark: 4px 4px 10px rgba(0, 0, 0, 0.6);
+            --clay-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5), -4px -4px 10px rgba(40, 40, 60, 0.3);
+            --glass-bg: rgba(30, 30, 45, 0.6);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --grid-color-minor: rgba(255, 255, 255, 0.08);
+            --grid-color-major: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background 0.4s, color 0.4s;
+        }
+
+        /* =========================================
+           2. ARQUITECTURA DEL CUADERNO (LAYOUT)
+           ========================================= */
+        #app-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            perspective: 2000px;
+            padding: 10px;
+            gap: 15px;
+        }
+
+        .book-wrapper {
+            width: 96%;
+            max-width: 1400px;
+            height: 82vh;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .book {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            background: transparent;
+            position: relative;
+        }
+
+        .page {
+            flex: 1;
+            background: var(--paper-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Patrón de cuadrícula milimetrada sutil en el fondo */
+            background-image: linear-gradient(var(--paper-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+            background-size: 20px 20px;
+            transition: background 0.4s;
+        }
+
+        .page-left {
+            border-radius: 12px 0 0 12px;
+            box-shadow: inset -15px 0 25px -10px rgba(0, 0, 0, 0.1), var(--shadow-dark);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .page-right {
+            border-radius: 0 12px 12px 0;
+            box-shadow: inset 15px 0 25px -10px rgba(0, 0, 0, 0.1), var(--shadow-dark);
+            border-left: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .page-content {
+            padding: 35px 45px;
+            overflow-y: auto;
+            height: 100%;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) transparent;
+        }
+
+        .page-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .page-content::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        /* =========================================
+           3. SPIRAL BINDING (ARGOLLADO REALISTA)
+           ========================================= */
+        .binding-spine {
+            position: absolute;
+            left: 50%;
+            top: 30px;
+            bottom: 30px;
+            width: 40px;
+            transform: translateX(-50%);
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+        }
+
+        .metal-ring {
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, #888 0%, #eee 40%, #ddd 60%, #555 100%);
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .metal-ring::before,
+        .metal-ring::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            width: 5px;
+            background: #2c3e50;
+            border-radius: 50%;
+            opacity: 0.9;
+        }
+
+        .metal-ring::before {
+            left: -3px;
+        }
+
+        .metal-ring::after {
+            right: -3px;
+        }
+
+        /* =========================================
+           4. TIPOGRAFÍA Y CAJAS EDUCATIVAS
+           ========================================= */
+        h1,
+        h2,
+        h3,
+        h4 {
+            color: var(--text-main);
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            position: relative;
+            display: inline-block;
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.6rem;
+            margin-top: 0;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 60%;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        h3 {
+            color: var(--primary-dark);
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
+
+        p,
+        li {
+            line-height: 1.7;
+            font-size: 0.98rem;
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+
+        /* Nota estilo "A mano" */
+        .handwritten-note {
+            font-family: 'Indie Flower', cursive;
+            background: #fff9c4;
+            color: #444;
+            padding: 10px 15px;
+            transform: rotate(-1deg);
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            border-bottom-right-radius: 20px;
+            font-size: 1.1rem;
+            margin: 15px 0;
+            border: 1px solid #fbc02d;
+        }
+
+        /* Cajas de Contenido Estandarizadas */
+        .def-box {
+            border-left: 5px solid var(--secondary);
+            background: rgba(114, 9, 183, 0.05);
+            padding: 15px;
+            border-radius: 0 12px 12px 0;
+            margin: 15px 0;
+        }
+
+        .def-title {
+            color: var(--secondary);
+            font-weight: 800;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .concept-box {
+            border-left: 5px solid var(--primary);
+            background: rgba(67, 97, 238, 0.05);
+            padding: 15px;
+            border-radius: 0 12px 12px 0;
+            margin: 15px 0;
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, rgba(76, 201, 240, 0.1), rgba(67, 97, 238, 0.1));
+            border: 2px dashed var(--success);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        /* PORTADA LATERAL (LEFT-SIDE COVER) */
+        .cover-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            border-radius: 12px 0 0 12px;
+            overflow: hidden;
+            box-shadow: inset -10px 0 20px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        .cover-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top center, rgba(76, 201, 240, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cover-page-content {
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cover-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .cover-particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.3;
+            }
+
+            50% {
+                transform: translateY(-20px);
+                opacity: 0.7;
+            }
+        }
+
+        /* TABLA DE CONTENIDOS (TOC) - PÁGINA DERECHA */
+        .toc-container {
+            padding: 10px;
+        }
+
+        .toc-title {
+            color: var(--primary);
+            font-size: 1.4rem;
+            font-weight: 800;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(67, 97, 238, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+
+        .toc-item:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
+            transform: translateX(5px);
+            border-color: var(--primary);
+        }
+
+        .toc-number {
+            font-family: 'Courier Prime', monospace;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+
+        .toc-text {
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        /* =========================================
+           5. SIMULADORES Y CANVAS (GEOGEBRA STYLE)
+           ========================================= */
+        .sim-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--clay-shadow);
+            padding: 0;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .sim-toolbar {
+            display: flex;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-body);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sim-title-bar {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        canvas.geogebra-canvas {
+            display: block;
+            width: 100%;
+            height: 300px;
+            cursor: crosshair;
+        }
+
+        .sim-controls {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.02);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        /* Sliders personalizados */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 120px;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* =========================================
+           6. NAVEGACIÓN (DOCK)
+           ========================================= */
+        .nav-dock {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            border: var(--glass-border);
+        }
+
+        .btn-circle {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-body);
+            color: var(--primary);
+            font-size: 1.1rem;
+            box-shadow: var(--clay-shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-circle:hover {
+            transform: translateY(-3px);
+            color: var(--accent);
+        }
+
+        /* =========================================
+           7. FOOTER GLOBAL & MODAL ÍNDICE
+           ========================================= */
+        .app-footer {
+            position: fixed;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        body.dark-mode .app-footer {
+            text-shadow: none;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Modal Index */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--paper-color);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            border-radius: 16px;
+            padding: 25px;
+            position: relative;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .index-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .index-item {
+            background: rgba(67, 97, 238, 0.08);
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            color: var(--text-main);
+        }
+
+        .index-item:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        /* Responsive Mobile */
+        @media (max-width: 900px) {
+            .page-right {
+                display: none;
+            }
+
+            .page-left {
+                width: 100%;
+                border-radius: 12px;
+                border: none;
+            }
+
+            .cover-page {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                border-radius: 12px;
+            }
+
+            .binding-spine {
+                display: none !important;
+            }
+
+            .book-wrapper {
+                height: 75vh;
+            }
+
+            #mobile-fab {
+                display: flex !important;
+                z-index: 9999;
+            }
+        }
+
+        #mobile-fab {
+            display: none;
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 9999;
+            background: var(--warning);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        /* Toggles Premium */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--text-muted);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider-toggle {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider-toggle:before {
+            transform: translateX(24px);
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(114, 9, 183, 0.3);
+        }
+
+        .btn-restart:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(114, 9, 183, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Botón Dark Mode -->
+    <button class="btn-circle" onclick="toggleTheme()" style="position:fixed; top:20px; left:20px; z-index:200;"
+        title="Modo Oscuro">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Botón Mobile Toggle -->
+    <button id="mobile-fab" onclick="toggleMobileSide()">
+        <i class="fas fa-columns"></i> Ver Der.
+    </button>
+
+    <div id="app-container">
+        <!-- Libro 3D -->
+        <div class="book-wrapper">
+            <div class="book">
+                <!-- Espiral Central -->
+                <div class="binding-spine">
+                    <!-- Generado por JS -->
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                    <div class="metal-ring"></div>
+                </div>
+
+                <!-- Página Izquierda -->
+                <div class="page page-left">
+                    <div class="page-content" id="content-left">
+                        <!-- El contenido se inyecta aquí -->
+                    </div>
+                    <div style="position:absolute; bottom:10px; left:20px; font-size:0.8rem; color:var(--text-muted);"
+                        id="num-left"></div>
+                </div>
+
+                <!-- Página Derecha -->
+                <div class="page page-right">
+                    <div class="page-content" id="content-right">
+                        <!-- El contenido se inyecta aquí -->
+                    </div>
+                    <div style="position:absolute; bottom:10px; right:20px; font-size:0.8rem; color:var(--text-muted);"
+                        id="num-right"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dock de Navegación -->
+        <div class="nav-dock">
+            <button class="btn-circle" onclick="goToPage(0)" title="Portada"><i class="fas fa-home"></i></button>
+            <button class="btn-circle" onclick="prevPage()" title="Anterior"><i
+                    class="fas fa-chevron-left"></i></button>
+            <button class="btn-circle" onclick="nextPage()" title="Siguiente"><i
+                    class="fas fa-chevron-right"></i></button>
+            <button class="btn-circle" onclick="toggleIndex()" title="Índice"><i class="fas fa-list"></i></button>
+        </div>
+    </div>
+
+    <!-- Footer Global -->
+    <div class="app-footer">
+        Creado por Msc. Néstor Fabio Montoya Palacios | Colegio María Auxiliadora, Cartago Valle
+    </div>
+
+    <!-- Modal Índice -->
+    <div id="index-modal" class="modal-overlay" onclick="closeIndex(event)">
+        <div class="modal-content">
+            <button class="close-modal" onclick="toggleIndex()"><i class="fas fa-times"></i></button>
+            <h2 style="color:var(--primary); margin-bottom:10px;"><i class="fas fa-book-open"></i> Tabla de Contenido
+            </h2>
+            <div id="index-list" class="index-grid">
+                <!-- Generado dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL -->
+    <script>
+        // ===================================
+        // 1. GESTIÓN DE CONTENIDO (PÁGINAS)
+        // ===================================
+        const pages = [
+            // --- PORTADA + CONTENIDO (Páginas 0 y 1) ---
+            {
+                title: 'Portada e Índice',
+                left: `
+                <div class="cover-page">
+                    <div class="cover-particles">
+                        <!-- Partículas decorativas -->
+                        <div class="cover-particle" style="top:10%; left:20%; width:10px; height:10px; background: #4cc9f0;"></div>
+                        <div class="cover-particle" style="top:40%; left:80%; width:15px; height:15px; animation-duration:8s; background: #f72585;"></div>
+                        <div class="cover-particle" style="top:70%; left:30%; width:8px; height:8px; animation-duration:10s; background: #4361ee;"></div>
+                        <div class="cover-particle" style="top:25%; left:70%; width:12px; height:12px; animation-duration:12s; background: #7209b7;"></div>
+                        <div class="cover-particle" style="top:80%; left:60%; width:10px; height:10px; animation-duration:9s; background: #4cc9f0;"></div>
+                    </div>
+                    <div class="cover-page-content" style="z-index: 2; position: relative;">
+                        <!-- Logo o Icono Premium -->
+                        <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-bottom: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+                            <i class="fas fa-atom fa-4x" style="color: #4cc9f0; text-shadow: 0 0 20px rgba(76,201,240,0.6);"></i>
+                        </div>
+                        
+                        <!-- Título Principal -->
+                        <h1 style="color: white; font-size: 2.8rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase; text-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 30px rgba(76,201,240,0.3);">
+                            Efecto Doppler
+                        </h1>
+                        
+                        <!-- Subtítulo -->
+                        <div style="color: #4cc9f0; font-size: 1.5rem; font-weight: 300; letter-spacing: 1px; margin-bottom: 40px; display: inline-block;">
+                            <span style="border-bottom: 2px solid #f72585; padding-bottom: 5px;">Ondas y Sonido</span>
+                        </div>
+                        
+                        <!-- Etiqueta de Categoría (Eliminado 10°) -->
+                        <br>
+                        <div style="display: inline-block; background: linear-gradient(135deg, rgba(247,37,133,0.8), rgba(114,9,183,0.8)); padding: 8px 30px; border-radius: 30px; font-weight: 600; letter-spacing: 2px; font-size: 0.9rem; text-transform: uppercase; box-shadow: 0 6px 20px rgba(247,37,133,0.4); border: 1px solid rgba(255,255,255,0.3); color: white;">
+                            Física Interactiva
+                        </div>
+                        
+                        <!-- Separador -->
+                        <hr style="width: 80px; height: 3px; background: #4cc9f0; border: none; border-radius: 3px; margin: 40px auto; box-shadow: 0 0 10px rgba(76,201,240,0.5);">
+                        
+                        <!-- Autor -->
+                        <div style="background: rgba(0,0,0,0.25); border-radius: 15px; padding: 20px 40px; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                            <p style="font-size: 0.85rem; color: #a6a6c3; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">Presentado Por</p>
+                            <p style="font-size: 1.15rem; color: white; margin: 0; font-weight: 400; letter-spacing: 0.5px;">Msc. Néstor Fabio Montoya Palacios</p>
+                        </div>
+                    </div>
+                </div>
+                `,
+                right: `
+                <div class="toc-container">
+                     <div class="toc-title"><i class="fas fa-list-ol"></i> Índice de Contenidos</div>
+                     <div id="toc-list" class="toc-list">
+                         <!-- El índice se genera automáticamente aquí -->
+                     </div>
+                </div>
+                `,
+                script: 'fillTOC' // Función para rellenar el índice en la portada
+            },
+
+            // --- PÁGINA 1: DEFINICIÓN E HISTORIA ---
+            {
+                title: 'Definición e Historia',
+                left: `
+                    <h2>1. ¿Qué es el Efecto Doppler?</h2>
+                    <div class="concept-box">
+                        <p>El <strong>Efecto Doppler</strong> es el aparente cambio de frecuencia de una onda producido por el movimiento relativo de la fuente respecto a su observador.</p>
+                    </div>
+                    <p>Fue propuesto en 1842 por el físico austríaco <strong>Christian Andreas Doppler</strong> en su tratado <em>"Sobre el color de la luz en estrellas binarias y otros astros"</em>.</p>
+                    
+                    <div class="handwritten-note">
+                        "¿Has notado cómo cambia el tono de la sirena de una ambulancia cuando pasa por tu lado? ¡Eso es el Efecto Doppler en acción!"
+                    </div>
+
+                    <p>En este cuaderno estudiaremos el caso especial donde las direcciones de las velocidades $v_o$ (observador) y $v_f$ (fuente) coinciden con la recta que los une.</p>
+                `,
+                right: `
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/Doppler.png" alt="Efecto Doppler" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Figura: Representación geométrica del Efecto Doppler.</p>
+                    </div>
+                    
+                    <div class="def-box">
+                        <span class="def-title">Convenio de Signos</span>
+                        <ul>
+                            <li>Tomaremos como <strong>sentido positivo</strong> de $v_o$ y $v_f$ el que va desde la posición del observador hacia la de la fuente.</li>
+                            <li>La velocidad $c$ de propagación de las ondas se considera siempre <strong>positiva</strong>.</li>
+                        </ul>
+                    </div>
+                `
+            },
+
+            // --- PÁGINA 2: DEDUCCIÓN MATEMÁTICA ---
+            {
+                title: 'Deducción Matemática',
+                left: `
+                    <h2>2. Análisis Geométrico</h2>
+                    <p>En la figura, un observador se encuentra a la izquierda de una fuente de ondas. El sentido positivo va de izquierda a derecha, por tanto $v_o$ como $v_f$ son positivas.</p>
+                    <p>En el instante $t = 0$, la fuente está en el punto $E$, y en el instante $t > 0$, en el punto $F$. La circunferencia exterior representa la onda emitida en $t = 0$, la cual se propaga radialmente con velocidad $c$.</p>
+                    <p>El radio de esta esfera (distancia $\overline{EA}$ o $\overline{EB}$) es $c \cdot t$. La distancia $\overline{EF}$ es igual a $v_f \cdot t$, por lo tanto:</p>
+                    <div class="formula-box">
+                        $$ \\overline{FA} = c \\cdot t + v_f \\cdot t = (c + v_f) t $$
+                        $$ \\overline{FB} = c \\cdot t - v_f \\cdot t = (c - v_f) t $$
+                    </div>
+                `,
+                right: `
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/DemostracionDoppler.png" alt="Deducción Doppler" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Figura: Modelo geométrico de propagación con fuente móvil.</p>
+                    </div>
+                    <h3>Frecuencia Percibida</h3>
+                    <p>En el intervalo de tiempo entre $t=0$ y $t>0$, el número de ondas emitidas es $n = f_f \\cdot t$. La longitud de onda detrás de la fuente es:</p>
+                    <div class="formula-box">
+                        $$ \\lambda' = \\frac{\\overline{FA}}{n} = \\frac{(c + v_f) t}{f_f \\cdot t} = \\frac{c + v_f}{f_f} $$
+                    </div>
+                    <p>Para un observador $O$ con velocidad de aproximación $c + v_o$ respecto a las ondas, la frecuencia $f_o$ es:</p>
+                    <div class="formula-box" style="border-style: solid; border-color: var(--primary);">
+                        $$ f_o = \\frac{\\text{velocidad}}{\\lambda'} = \\left( \\frac{c + v_o}{c + v_f} \\right) f_f $$
+                    </div>
+                    <p>Esta expresión relaciona la frecuencia emitida ($f_f$) con la percibida ($f_o$).</p>
+                `
+            },
+
+            // --- PÁGINA 3: FÓRMULA GENERAL ---
+            {
+                title: 'Fórmula General',
+                left: `
+                    <h2>3. Expresión Universal</h2>
+                    <p>La fórmula general que engloba todos los casos del Efecto Doppler es:</p>
+                    <div class="formula-box" style="background: var(--primary); color: white; border: none;">
+                        $$ \\frac{f_o}{c \\pm v_o} = \\frac{f_f}{c \\pm v_f} $$
+                    </div>
+                    
+                    <div class="def-box">
+                        <span class="def-title">Reglas de Aplicación</span>
+                        <p>Para aplicar correctamente los signos, recuerda:</p>
+                        <ul>
+                            <li><strong>Observador se acerca:</strong> $v_o > 0$</li>
+                            <li><strong>Observador se aleja:</strong> $v_o < 0$</li>
+                            <li><strong>Fuente se aleja:</strong> $v_f > 0$</li>
+                            <li><strong>Fuente se acerca:</strong> $v_f < 0$</li>
+                        </ul>
+                    </div>
+                `,
+                right: `
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/Doppler2.png" alt="Casos Doppler" style="width: 100%; border-radius: 8px;">
+                    </div>
+                    <div class="handwritten-note">
+                        "Consejo: Siempre dibuja un esquema situando al observador y la fuente para no confundir los sentidos de movimiento."
+                    </div>
+                `
+            },
+
+            // --- PÁGINA 4: EJEMPLO PRÁCTICO ---
+            {
+                title: 'Ejemplo: La Ambulancia',
+                left: `
+                    <h2>4. Problema de Aplicación</h2>
+                    <p><strong>Ejemplo:</strong> De pie en un crucero, usted escucha una frecuencia de $560\\text{ Hz}$ de la sirena de una ambulancia que se aproxima. Después de que pasa, la frecuencia observada es de $480\\text{ Hz}$. determine la rapidez de la ambulancia.</p>
+                    
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/EjemploDopplerAmbulancia.png" alt="Ejemplo Ambulancia" style="width: 100%; border-radius: 8px;">
+                    </div>
+                `,
+                right: `
+                    <h3>Solución Paso a Paso</h3>
+                    <p>Como el observador está en reposo, $v_o = 0$. Aplicamos la fórmula para ambos casos:</p>
+                    <p><strong>a) Acercándose:</strong> $560 = \\left( \\frac{c}{c - v_f} \\right) f_f$</p>
+                    <p><strong>b) Alejándose:</strong> $480 = \\left( \\frac{c}{c + v_f} \\right) f_f$</p>
+                    <p>Dividiendo ambas expresiones:</p>
+                    <div class="formula-box">
+                        $$ \\frac{560}{480} = \\frac{c + v_f}{c - v_f} \\implies \\frac{7}{6} = \\frac{c + v_f}{c - v_f} $$
+                    </div>
+                    <p>Despejando $v_f$ obtenemos:</p>
+                    <div class="formula-box" style="border-color: var(--accent);">
+                        $$ 13 v_f = c \\implies v_f = \\frac{c}{13} $$
+                    </div>
+                `
+            },
+
+            // --- PÁGINA 5: EJEMPLO BARCOS (SONAR) ---
+            {
+                title: 'Ejemplo: Barcos y Corriente',
+                left: `
+                    <h2>5. Movimiento con Corriente</h2>
+                    <p><strong>Ejemplo 2.19:</strong> Dos barcos se mueven a lo largo de una línea hacia el este. El buque trasero tiene una rapidez, relativa a un punto de observación con base en tierra, de $64\\text{ km/h}$, y el buque delantero tiene una rapidez de $45\\text{ km/h}$ en relación con dicho punto. Los dos barcos están en una región del océano donde el movimiento de la corriente es uniforme hacia el oeste a $10\\text{ km/h}$. El barco trasero transmite una señal de sonar a una frecuencia de $1200\\text{ Hz}$. ¿Qué frecuencia monitorea el barco delantero? Use $1520\\text{ m/s}$ como la rapidez del sonido en agua oceánica.</p>
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/EjemploBarcosDoppler.png" alt="Ejemplo Barcos" style="width: 100%; border-radius: 8px;">
+                    </div>
+                `,
+                right: `
+                    <h3>Solución Paso a Paso</h3>
+                    <p>Sean $v_{1O}$ y $v_{2O}$ las velocidades del primer y segundo barco respecto al océano, y $v_{OT} = v_c$ la velocidad de la corriente respecto a tierra. Las velocidades relativas a tierra son:</p>
+                    <div class="formula-box" style="padding: 10px;">
+                        $$ v_{1T} = v_{1O} + v_c \\implies v_{1O} = v_{1T} - v_c $$
+                        $$ v_{2T} = v_{2O} + v_c \\implies v_{2O} = v_{2T} - v_c $$
+                    </div>
+                    <p>Escribiendo escalarmente (corriente hacia el oeste):</p>
+                    <div class="formula-box" style="padding: 10px;">
+                        $$ v_{1O} = 64\\text{ km/h} - 10\\text{ km/h} = 54\\text{ km/h} = 15\\text{ m/s} $$
+                        $$ v_{2O} = 45\\text{ km/h} - 10\\text{ km/h} = 35\\text{ km/h} = 9.72\\text{ m/s} $$
+                    </div>
+                    <p>El observador (segundo barco) se aleja y la fuente (primer barco) se acerca, aplicamos:</p>
+                    <div class="formula-box" style="border-color: var(--accent); padding: 10px;">
+                        $$ f_2 = f_1 \\left( \\frac{c - v_{2O}}{c - v_{1O}} \\right) = 1200\\text{ Hz} \\left( \\frac{1520 - 9.72}{1520 - 15} \\right) $$
+                        $$ f_2 = 1200\\text{ Hz} \\left( \\frac{1510.28}{1505} \\right) \\approx 1204.21\\text{ Hz} $$
+                    </div>
+                `
+            },
+
+            // --- PÁGINA 6: ONDAS DE CHOQUE ---
+            {
+                title: 'Ondas de Choque',
+                left: `
+                    <h2>6. Ondas de Choque y Onda de Mach</h2>
+                    <p>Un caso especial del efecto Doppler se presenta cuando el observador está en reposo, pero la fuente se mueve con una velocidad mayor que la velocidad de propagación de las ondas ($v_f > c$).</p>
+                    <p>Entonces, en un tiempo dado la fuente avanza más rápido que el frente de onda; por ejemplo, si en un tiempo $t$ la fuente se mueve de $A$ hasta $B$, su onda emitida en $A$ ha viajado solamente desde $A$ hasta $A'$.</p>
+                    <p>La superficie tangente a todas las ondas sucesivas es un cono cuyo eje es la recta sobre la que se mueve la fuente y cuya apertura $\\theta$ está dada por:</p>
+                    <div class="formula-box">
+                        $$ \\sin\\theta = \\frac{\\overline{AA'}}{\\overline{AB}} = \\frac{c \\cdot t}{v_f \\cdot t} \\implies \\sin\\theta = \\frac{c}{v_f} $$
+                    </div>
+                    <p>El movimiento ondulatorio resultante es entonces una onda cónica. Esta onda se llama <strong>onda de Mach</strong>, u onda de choque.</p>
+                `,
+                right: `
+                    <div class="sim-container" style="background: white; padding: 10px; margin-top: 30px;">
+                        <img src="../imagenes/ConoMach.png" alt="Ondas de Choque" style="width: 100%; border-radius: 8px;">
+                    </div>
+                    <p style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Figura: Modelo geométrico de las Ondas de Choque.</p>
+                    
+                    <div class="handwritten-note">
+                        "¿Has escuchado el fuerte estallido cuando un avión supera la barrera del sonido? Es literalmente el límite del cono de Mach pasando por tus oídos."
+                    </div>
+                `
+            },
+
+            // --- PÁGINA 7: EL NÚMERO DE MACH ---
+            {
+                title: 'El Número de Mach',
+                left: `
+                    <h2>7. El Número de Mach (M)</h2>
+                    <p>Conocido en el uso coloquial como <em>mach</em>, es una medida de velocidad relativa que se define como el cociente entre la velocidad de un objeto y la velocidad del sonido en el medio en que se mueve dicho objeto.</p>
+                    <div class="formula-box" style="background: var(--primary); color: white; border: none;">
+                        $$ M = \\frac{v_f}{c} $$
+                    </div>
+                    <p>El mach es un número adimensional normalmente utilizado para describir la velocidad de los aviones. Este número fue propuesto por el físico austríaco <strong>Ernst Mach (1838‑1916)</strong>, como una manera sencilla de expresar la velocidad de un objeto con respecto a la velocidad del sonido.</p>
+                    
+                    <div class="def-box">
+                        <span class="def-title">Clasificación de Regímenes de Vuelo</span>
+                        <ul>
+                            <li><strong>Subsónico:</strong> $M < 0.7$</li>
+                            <li><strong>Transónico:</strong> $0.7 < M < 1.2$</li>
+                            <li><strong>Supersónico:</strong> $1.2 < M < 5.0$</li>
+                            <li><strong>Hipersónico:</strong> $M > 5.0$</li>
+                        </ul>
+                    </div>
+                `,
+                right: `
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/numeroMach.png" alt="Número Mach" style="width: 100%; border-radius: 8px;">
+                    </div>
+                    
+                    <h3>Importancia del Número de Mach</h3>
+                    <p>La velocidad del sonido no es constante, depende de la temperatura y las condiciones de la atmósfera. Por ejemplo, disminuye a mayor altitud. Al expresar la velocidad de una aeronave como $M$, no necesitamos saber la velocidad exacta del sonido en ese punto para saber si se experimentarán efectos supersónicos.</p>
+                    <p>En aeronáutica, dos aviones que viajan a $M=1$ (uno al nivel del mar y otro a gran altitud) experimentarán fuerzas aerodinámicas y ondas de choque similares, aunque sus velocidades absolutas en $\\text{km/h}$ sean diferentes.</p>
+                `
+            },
+
+            // --- PÁGINA 8: EJEMPLO ONDAS DE CHOQUE ---
+            {
+                title: 'Ejemplo: Avión Supersónico',
+                left: `
+                    <h2>8. Avión Supersónico</h2>
+                    <p><strong>Ejemplo 2.20:</strong> Un avión supersónico que viaja a Mach $3$ a una altura de $20000\\text{ m}$ está directamente arriba de una persona en el tiempo $t = 0$, como se muestra en la figura.</p>
+                    <ol type="a">
+                        <li>¿En qué tiempo la persona encontrará la onda de choque?</li>
+                        <li>¿Dónde estará el avión cuando finalmente se escuche el "estallido"? Suponga que la rapidez del sonido en el aire es de $335\\text{ m/s}$.</li>
+                    </ol>
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/EjemploOndasChoque.png" alt="Avión Mach 3" style="width: 100%; border-radius: 8px;">
+                    </div>
+                `,
+                right: `
+                    <h3>Solución</h3>
+                    <p>De la figura observamos que $\\sin\\theta = \\frac{h}{\\sqrt{x^2 + h^2}}$, y sabemos que $\\sin\\theta = \\frac{c}{v_f}$. Igualando:</p>
+                    <div class="formula-box" style="padding: 10px;">
+                        $$ \\frac{h}{\\sqrt{x^2 + h^2}} = \\frac{c}{v_f} \\implies c\\sqrt{x^2 + h^2} = v_f \\cdot h $$
+                    </div>
+                    <p>Sustituyendo $v_f = 3c$ (por ser Mach 3):</p>
+                    <div class="formula-box" style="padding: 10px;">
+                        $$ \\sqrt{x^2 + h^2} = h \\left( \\frac{3c}{c} \\right) = 3h $$
+                        $$ x^2 + h^2 = 9h^2 \\implies x = \\sqrt{8}h = 2\\sqrt{2}h $$
+                    </div>
+                    <p>Sabiendo que la distancia recorrida por el avión es $x = v_f \\cdot t$:</p>
+                    <div class="formula-box" style="border-color: var(--accent); padding: 10px;">
+                        $$ v_f \\cdot t = 2\\sqrt{2}h \\implies t = \\frac{2\\sqrt{2}h}{v_f} = \\frac{2\\sqrt{2}h}{3c} $$
+                        $$ t = \\frac{2\\sqrt{2}}{3} \\left( \\frac{20000\\text{ m}}{335\\text{ m/s}} \\right) \\approx 56.3\\text{ s} $$
+                    </div>
+                `
+            },
+
+            // --- PÁGINA 9: APLICACIONES Y CURIOSIDADES ---
+            {
+                title: 'Aplicaciones del Efecto Doppler',
+                left: `
+                    <h2>9. Más que Solo Sonido</h2>
+                    <p>Aunque lo experimentamos a diario con el sonido, el Efecto Doppler es fundamental en muchas áreas de la ciencia y tecnología:</p>
+                    
+                    <div class="concept-box" style="border-left-color: var(--warning);">
+                        <h3><i class="fas fa-satellite"></i> Astronomía</h3>
+                        <p>Se usa para medir la velocidad a la que las estrellas y galaxias se acercan o se alejan de nosotros (corrimiento al rojo).</p>
+                    </div>
+
+                    <div class="concept-box" style="border-left-color: var(--success);">
+                        <h3><i class="fas fa-radar"></i> Radares de Tráfico</h3>
+                        <p>Los radares disparan ondas de radio a los vehículos y miden el cambio de frecuencia del rebote para calcular su velocidad.</p>
+                    </div>
+                `,
+                right: `
+                    <div class="handwritten-note">
+                        "En medicina, la ecografía Doppler permite visualizar el flujo sanguíneo por el corazón y los vasos sanguíneos sin necesidad de cirugía."
+                    </div>
+                    
+                    <div class="sim-container" style="background: white; padding: 10px;">
+                        <img src="../imagenes/AplicacionesEfectoDoppler.png" alt="Ecografía Doppler" style="width: 100%; border-radius: 8px;">
+                    </div>
+                    <p style="text-align: center; font-size: 0.8rem; color: var(--text-muted);">Imagen: Aplicación médica del Efecto Doppler.</p>
+                `
+            },
+
+            // --- PÁGINA 10: LABORATORIO VIRTUAL ---
+            {
+                title: 'Laboratorio Virtual Doppler',
+                left: `
+                    <h2>10. Simulación Interactiva</h2>
+                    <p>En este laboratorio puedes observar cómo se deforman los frentes de onda cuando la fuente está en movimiento.</p>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Si $v_f = 0$, los frentes son concéntricos.</li>
+                        <li><i class="fas fa-check"></i> Si $v_f < c$, las ondas se comprimen adelante y se expanden atrás.</li>
+                        <li><i class="fas fa-check"></i> Si $v_f = c$, se produce una <strong>onda de choque</strong>.</li>
+                    </ul>
+                    
+                    <div class="sim-controls" style="margin-top:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Velocidad Fuente ($v_f$): <span id="val-vf">50</span></label>
+                            <input type="range" id="slider-vf" min="0" max="250" value="50" oninput="updateDoppler(this.value, 'vf')">
+                        </div>
+                        <div>
+                            <label>Frecuencia Fuente ($f_f$): <span id="val-ff">2.0</span> Hz</label>
+                            <input type="range" id="slider-ff" min="0.5" max="10.0" step="0.5" value="2.0" oninput="updateDoppler(this.value, 'ff')">
+                        </div>
+                        <div>
+                            <label>Velocidad Onda ($c$): <span id="val-c">100</span></label>
+                            <input type="range" id="slider-c" min="50" max="250" value="100" oninput="updateDoppler(this.value, 'c')">
+                        </div>
+                        <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                             <div class="switch-container">
+                                <label class="switch">
+                                    <input type="checkbox" id="pause-toggle" onchange="togglePause(this.checked)">
+                                    <span class="slider-toggle"></span>
+                                </label>
+                                <span id="pause-text" style="font-weight: 600;">Animación Activa</span>
+                             </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px; display: flex; justify-content: center;">
+                        <button class="btn-restart" onclick="restartDopplerSim()">
+                            <i class="fas fa-undo"></i> Reiniciar Simulación
+                        </button>
+                    </div>
+                `,
+                right: `
+                    <div class="sim-container" style="height: 400px; overflow: hidden; position: relative;">
+                         <div class="sim-toolbar">
+                             <div class="sim-title-bar"><i class="fas fa-wave-square"></i> Monitor de Frentes de Onda</div>
+                        </div>
+                        <canvas id="dopplerCanvas" style="width:100%; height:100%; cursor: crosshair; background: #0f172a;"></canvas>
+                    </div>
+                `,
+                script: 'initDopplerSim'
+            },
+
+            // --- PÁGINA 11: SIMULADOR ULTIMATE (ANIMACIÓN REAL E IFRAME) ---
+            {
+                title: 'Simulador Ultimate (Con Audio)',
+                left: `
+                    <h2>11. Simulador Doppler Avanzado</h2>
+                    <p>En la página contigua hemos integrado la <strong>Ultimate Edition</strong> del simulador Doppler desarrollada por Gemini AI.</p>
+                    
+                    <div class="def-box">
+                        <h3><i class="fas fa-microchip"></i> Características Físicas</h3>
+                        <ul>
+                            <li><strong>Cálculos Vectoriales en Tiempo Real:</strong> Matemática exacta con $f' = f_s \\left( \\frac{c - \\vec{v}_o \\cdot \\hat{r}}{c - \\vec{v}_s \\cdot \\hat{r}} \\right)$.</li>
+                            <li><strong>Audio Dinámico 3D:</strong> Escucha los "pings" cambiando de pitch al acercarse y alejarse el objeto.</li>
+                            <li><strong>Barrera del Sonido y Shockwave:</strong> Ruptura real y efecto de Estallido Sónico ("Sonic Boom").</li>
+                        </ul>
+                    </div>
+                `,
+                right: `
+                    <div style="width: 100%; height: 100%; overflow: auto; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background: var(--paper-color);">
+                        <iframe src="EfectoDoppler.html" style="width: 1200px; height: 800px; border: none; background: transparent; display: block;"></iframe>
+                    </div>
+                `,
+                script: ``
+            }
+        ];
+
+        // ===================================
+        // 2. LÓGICA DEL MOTOR (CORE ENGINE)
+        // ===================================
+        let currentPage = 0;
+        let isDarkMode = false;
+        let mobileShowRight = false; // Toggle para móvil
+
+        function init() {
+            createRings(); // Crear anillas visuales
+            renderPage();
+            generateIndex();
+        }
+
+        // --- SISTEMA DE ÍNDICE ---
+        function generateIndex() {
+            const list = document.getElementById('index-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            pages.forEach((page, index) => {
+                const item = document.createElement('div');
+                item.className = 'index-item';
+                if (index === 0) {
+                    item.innerHTML = `<i class="fas fa-home"></i> Portada`;
+                } else {
+                    const title = page.title || `Sección ${index}`;
+                    const pageNum = (index * 2) - 1;
+                    const icon = page.icon ? `<i class="${page.icon}"></i>` : `<strong>${pageNum}.</strong>`;
+                    item.innerHTML = `${icon} ${title}`;
+                }
+                item.onclick = () => {
+                    goToPage(index);
+                    toggleIndex();
+                };
+                list.appendChild(item);
+            });
+        }
+
+        // --- RELLENAR TOC DE PORTADA ---
+        window.fillTOC = function () {
+            const tocList = document.getElementById('toc-list');
+            if (!tocList) return;
+            tocList.innerHTML = '';
+
+            pages.forEach((page, index) => {
+                // Saltar la portada misma (índice 0)
+                if (index === 0) return;
+
+                const item = document.createElement('div');
+                item.className = 'toc-item';
+                const pageNum = (index * 2) - 1;
+                const title = page.title || `Sección ${pageNum}`;
+
+                const icon = page.icon ? `<i class="${page.icon}" style="font-size:1.2rem; color:var(--primary);"></i>` : `<div class="toc-number">${pageNum}</div>`;
+
+                item.innerHTML = `
+                    ${icon}
+                    <div class="toc-text">${title}</div>
+                `;
+                item.onclick = () => goToPage(index);
+                tocList.appendChild(item);
+            });
+        };
+
+        function toggleIndex() {
+            const modal = document.getElementById('index-modal');
+            if (modal) modal.classList.toggle('active');
+        }
+
+        function closeIndex(e) {
+            if (e.target.id === 'index-modal') {
+                toggleIndex();
+            }
+        }
+
+        // Renderizado de Páginas
+        function renderPage() {
+            const p = pages[currentPage];
+            const cLeft = document.getElementById('content-left');
+            const cRight = document.getElementById('content-right');
+            const numL = document.getElementById('num-left');
+            const numR = document.getElementById('num-right');
+
+            // Restaurar layout completo siempre (tratamos portada como spread normal)
+            const pLeft = document.querySelector('.page-left');
+            const pRight = document.querySelector('.page-right');
+            const spine = document.querySelector('.binding-spine');
+
+            pLeft.style.width = '';
+            pRight.style.display = '';
+            spine.style.display = 'flex';
+
+            // Verificaciones layout móvil
+            checkMobileLayout();
+
+            // Inyectar Contenido
+            cLeft.innerHTML = p.left || '';
+            cRight.innerHTML = p.right || '';
+
+            // Numeración
+            if (currentPage === 0) {
+                numL.innerText = "";
+                numR.innerText = "";
+            } else {
+                numL.innerText = currentPage * 2 - 1;
+                numR.innerText = currentPage * 2;
+            }
+
+            // MathJax
+            if (window.MathJax) MathJax.typeset();
+
+            // Ejecutar scripts específicos
+            if (p.script && window[p.script]) {
+                setTimeout(window[p.script], 100);
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < pages.length - 1) {
+                currentPage++;
+                renderPage();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                renderPage();
+            }
+        }
+
+        function goToPage(n) {
+            currentPage = n;
+            renderPage();
+        }
+
+        function createRings() {
+            const spine = document.querySelector('.binding-spine');
+            spine.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const ring = document.createElement('div');
+                ring.className = 'metal-ring';
+                spine.appendChild(ring);
+            }
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode');
+            const icon = document.querySelector('.fa-moon');
+            if (isDarkMode) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+            // Redibujar gráficos si existen para actualizar colores
+            if (window.drawGeoGraph) window.drawGeoGraph();
+        }
+
+        function toggleMobileSide() {
+            mobileShowRight = !mobileShowRight;
+            const l = document.querySelector('.page-left');
+            const r = document.querySelector('.page-right');
+            const btn = document.getElementById('mobile-fab');
+
+            if (mobileShowRight) {
+                l.style.display = 'none';
+                r.style.display = 'flex';
+                btn.innerHTML = '<i class="fas fa-columns"></i> Ver Izq.';
+            } else {
+                l.style.display = 'flex';
+                r.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-columns"></i> Ver Der.';
+            }
+        }
+
+        function checkMobileLayout() {
+            if (window.innerWidth <= 900) {
+                // Reset a vista izquierda por defecto al cambiar página
+                mobileShowRight = false;
+                document.querySelector('.page-left').style.display = 'flex';
+                document.querySelector('.page-right').style.display = 'none';
+                document.getElementById('mobile-fab').innerHTML = '<i class="fas fa-columns"></i> Ver Der.';
+            } else {
+                document.querySelector('.page-left').style.display = 'flex';
+                document.querySelector('.page-right').style.display = 'flex';
+            }
+        }
+
+        window.addEventListener('resize', checkMobileLayout);
+
+        // ===================================
+        // 3. MOTOR GRÁFICO (GEOGEBRA STYLE)
+        // ===================================
+        // Variables globales del gráfico actual
+        let gCtx, gCanvas, gScale = 30; // Pixeles por unidad
+        let gOffsetX = 0, gOffsetY = 0;
+        let isDragging = false, lastX, lastY;
+
+        // Parámetros de la simulación ejemplo
+        let paramM = 1, paramB = 0;
+
+        window.initGeoGraph = function () {
+            gCanvas = document.getElementById('geoCanvas');
+            if (!gCanvas) return;
+            gCtx = gCanvas.getContext('2d');
+
+            // Ajustar resolución retina
+            const dpr = window.devicePixelRatio || 1;
+            const rect = gCanvas.getBoundingClientRect();
+            gCanvas.width = rect.width * dpr;
+            gCanvas.height = rect.height * dpr;
+            gCtx.scale(dpr, dpr);
+
+            // Eventos Mouse
+            gCanvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; gCanvas.style.cursor = 'grabbing'; });
+            window.addEventListener('mouseup', () => { isDragging = false; if (gCanvas) gCanvas.style.cursor = 'crosshair'; });
+            window.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                gOffsetX += dx;
+                gOffsetY += dy;
+                lastX = e.clientX; lastY = e.clientY;
+                window.drawGeoGraph();
+            });
+
+            // Eventos Wheel (Zoom)
+            gCanvas.addEventListener('wheel', e => {
+                e.preventDefault();
+                const delta = Math.sign(e.deltaY);
+                gScale -= delta * 2;
+                if (gScale < 10) gScale = 10;
+                if (gScale > 100) gScale = 100;
+                window.drawGeoGraph();
+            });
+
+            window.drawGeoGraph();
+        }
+
+        window.updateGraph = function (val, type) {
+            if (type === 'm') { paramM = parseFloat(val); document.getElementById('val-m').textContent = val; }
+            if (type === 'b') { paramB = parseFloat(val); document.getElementById('val-b').textContent = val; }
+            window.drawGeoGraph();
+        }
+
+        window.resetView = function () {
+            gOffsetX = 0; gOffsetY = 0; gScale = 30;
+            window.drawGeoGraph();
+        }
+
+        window.drawGeoGraph = function () {
+            if (!gCtx || !gCanvas) return;
+
+            // Dimensiones lógicas (CSS pixels)
+            const width = gCanvas.width / (window.devicePixelRatio || 1);
+            const height = gCanvas.height / (window.devicePixelRatio || 1);
+
+            // Limpiar
+            gCtx.clearRect(0, 0, width, height);
+
+            // Colores según tema
+            const gridMinor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+            const gridMajor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)';
+            const axisColor = isDarkMode ? '#e2e2e2' : '#2b2d42';
+            const tickColor = isDarkMode ? '#aaa' : '#666';
+
+            const cx = width / 2 + gOffsetX;
+            const cy = height / 2 + gOffsetY;
+
+            // 1. DIBUJAR CUADRÍCULA (GRID)
+            gCtx.lineWidth = 1;
+
+            // Líneas menores
+            gCtx.strokeStyle = gridMinor;
+            gCtx.beginPath();
+            for (let x = cx % (gScale / 2); x < width; x += gScale / 2) { gCtx.moveTo(x, 0); gCtx.lineTo(x, height); }
+            for (let y = cy % (gScale / 2); y < height; y += gScale / 2) { gCtx.moveTo(0, y); gCtx.lineTo(width, y); }
+            gCtx.stroke();
+
+            // Líneas mayores
+            gCtx.strokeStyle = gridMajor;
+            gCtx.lineWidth = 1.5;
+            gCtx.beginPath();
+            for (let x = cx % gScale; x < width; x += gScale) { gCtx.moveTo(x, 0); gCtx.lineTo(x, height); }
+            for (let y = cy % gScale; y < height; y += gScale) { gCtx.moveTo(0, y); gCtx.lineTo(width, y); }
+            gCtx.stroke();
+
+            // 2. EJES CARTESIANOS
+            gCtx.strokeStyle = axisColor;
+            gCtx.lineWidth = 2;
+            gCtx.beginPath();
+            gCtx.moveTo(0, cy); gCtx.lineTo(width, cy); // Eje X
+            gCtx.moveTo(cx, 0); gCtx.lineTo(cx, height); // Eje Y
+            gCtx.stroke();
+
+            // 3. NUMERACIÓN (TICKS)
+            gCtx.fillStyle = tickColor;
+            gCtx.font = "10px Nunito";
+            gCtx.textAlign = "center";
+            gCtx.textBaseline = "top";
+
+            // Ticks X
+            const startNodeX = Math.floor(-cx / gScale);
+            const endNodeX = Math.ceil((width - cx) / gScale);
+
+            for (let i = startNodeX; i <= endNodeX; i++) {
+                if (i === 0) continue;
+                const xPos = cx + i * gScale;
+                gCtx.fillText(i, xPos, cy + 5);
+                // Pequeña marca
+                gCtx.fillRect(xPos - 0.5, cy - 2, 1, 4);
+            }
+
+            // Ticks Y
+            gCtx.textAlign = "right";
+            gCtx.textBaseline = "middle";
+            // i positivo en matemáticas es arriba (Y canvas menor)
+            // Calculamos rango visible en Y
+            const startNodeY = Math.floor((cy - height) / gScale);
+            const endNodeY = Math.ceil(cy / gScale);
+
+            for (let i = -20; i < 20; i++) {
+                if (i === 0) continue;
+                const yPos = cy - i * gScale;
+                if (yPos > 0 && yPos < height) {
+                    gCtx.fillText(i, cx - 5, yPos);
+                    gCtx.fillRect(cx - 2, yPos - 0.5, 4, 1);
+                }
+            }
+
+            // 4. DIBUJAR FUNCIÓN LINEAL (y = mx + b)
+            gCtx.strokeStyle = "#f72585"; // Accent color
+            gCtx.lineWidth = 3;
+            gCtx.beginPath();
+
+            const xMin = (0 - cx) / gScale;
+            const xMax = (width - cx) / gScale;
+
+            const y1 = paramM * xMin + paramB;
+            const y2 = paramM * xMax + paramB;
+
+            gCtx.moveTo(0, cy - y1 * gScale);
+            gCtx.lineTo(width, cy - y2 * gScale);
+            gCtx.stroke();
+        }
+
+        /**
+         * Función genérica para dibujar ejes tipo GeoGebra
+         */
+        window.drawCartesianGrid = function(ctx, width, height, scale, offsetX, offsetY, isDark) {
+            const cx = width / 2 + offsetX;
+            const cy = height / 2 + offsetY;
+
+            const gridMinor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+            const gridMajor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)';
+            const axisColor = isDark ? '#e2e2e2' : '#2b2d42';
+            const tickColor = isDark ? '#aaa' : '#666';
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = gridMinor;
+            ctx.beginPath();
+            for (let x = cx % (scale / 2); x < width; x += scale / 2) { ctx.moveTo(x, 0); ctx.lineTo(x, height); }
+            for (let y = cy % (scale / 2); y < height; y += scale / 2) { ctx.moveTo(0, y); ctx.lineTo(width, y); }
+            ctx.stroke();
+
+            ctx.strokeStyle = gridMajor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let x = cx % scale; x < width; x += scale) { ctx.moveTo(x, 0); ctx.lineTo(x, height); }
+            for (let y = cy % scale; y < height; y += scale) { ctx.moveTo(0, y); ctx.lineTo(width, y); }
+            ctx.stroke();
+
+            ctx.strokeStyle = axisColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, cy); ctx.lineTo(width, cy);
+            ctx.moveTo(cx, 0); ctx.lineTo(cx, height);
+            ctx.stroke();
+
+            ctx.fillStyle = tickColor;
+            ctx.font = "10px Nunito";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+
+            const startNodeX = Math.floor(-cx / scale);
+            const endNodeX = Math.ceil((width - cx) / scale);
+            for (let i = startNodeX; i <= endNodeX; i++) {
+                if (i === 0) continue;
+                const xPos = cx + i * scale;
+                if (xPos > 0 && xPos < width) {
+                    ctx.fillText(i, xPos, cy + 5);
+                    ctx.fillRect(xPos - 0.5, cy - 2, 1, 4);
+                }
+            }
+
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+            const startNodeY = Math.floor((cy - height) / scale);
+            const endNodeY = Math.ceil(cy / scale);
+            for (let i = startNodeY; i <= endNodeY; i++) {
+                if (i === 0) continue;
+                const yPos = cy - i * scale;
+                if (yPos > 0 && yPos < height) {
+                    ctx.fillText(i, cx - 5, yPos);
+                    ctx.fillRect(cx - 2, yPos - 0.5, 4, 1);
+                }
+            }
+        }
+
+
+        // ===================================
+        // 4. SIMULACIÓN DOPPLER (MEJORADA)
+        // ===================================
+        let dCanvas, dCtx, dAnim;
+        let dWaves = [];
+        let sourceX = 0, vf = 50, cSpeed = 100, ff = 2.0;
+        let lastWaveTime = 0;
+        let dScale = 40; // Escala GeoGebra para el simulador Doppler
+        let dPaused = false;
+        let dLastTime = 0;
+
+        window.initDopplerSim = function() {
+            dCanvas = document.getElementById('dopplerCanvas');
+            if(!dCanvas) return;
+            dCtx = dCanvas.getContext('2d');
+            
+            const dpr = window.devicePixelRatio || 1;
+            const rect = dCanvas.getBoundingClientRect();
+            dCanvas.width = rect.width * dpr;
+            dCanvas.height = rect.height * dpr;
+            dCtx.scale(dpr, dpr);
+
+            dWaves = [];
+            sourceX = -5; // Empezar un poco a la izquierda
+            if(dAnim) cancelAnimationFrame(dAnim);
+            lastWaveTime = performance.now();
+            dLastTime = performance.now();
+            dAnim = requestAnimationFrame(animateDoppler);
+            
+            // Reset UI de pausa
+            dPaused = false;
+            const toggle = document.getElementById('pause-toggle');
+            if(toggle) toggle.checked = false;
+            const text = document.getElementById('pause-text');
+            if(text) text.textContent = "Animación Activa";
+        };
+
+        window.togglePause = function(checked) {
+            dPaused = checked;
+            const text = document.getElementById('pause-text');
+            if(text) text.textContent = dPaused ? "Simulación Pausada" : "Animación Activa";
+            if(!dPaused) {
+                lastWaveTime = performance.now() - (dLastTime - lastWaveTime); // Ajustar tiempo para que no salten ondas
+                dLastTime = performance.now();
+                dAnim = requestAnimationFrame(animateDoppler);
+            }
+        };
+
+        window.restartDopplerSim = function() {
+            dWaves = [];
+            sourceX = -5;
+            lastWaveTime = performance.now();
+            if(dPaused) {
+                // Si está pausado, dibujar un frame estático
+                dLastTime = performance.now();
+                drawStaticDoppler();
+            }
+        };
+
+        function drawStaticDoppler() {
+             animateDoppler(performance.now());
+        }
+
+        window.updateDoppler = function(val, type) {
+            val = parseFloat(val);
+            if(type === 'vf') { vf = val; document.getElementById('val-vf').textContent = val; }
+            if(type === 'ff') { ff = val; document.getElementById('val-ff').textContent = val.toFixed(1); }
+            if(type === 'c') { cSpeed = val; document.getElementById('val-c').textContent = val; }
+        };
+
+        function animateDoppler(time) {
+            if(!dCanvas) return;
+            if(dPaused && time !== lastWaveTime) return; // Solo permitir dibujo si no está pausado o es un frame forzado
+
+            const deltaTime = (time - dLastTime) / 1000;
+            dLastTime = time;
+
+            const width = dCanvas.width / (window.devicePixelRatio || 1);
+            const height = dCanvas.height / (window.devicePixelRatio || 1);
+
+            // Limpiar fondo
+            dCtx.fillStyle = isDarkMode ? '#1e1e2e' : '#fff';
+            dCtx.fillRect(0, 0, width, height);
+
+            // Dibujar Ejes GeoGebra
+            window.drawCartesianGrid(dCtx, width, height, dScale, 0, 0, isDarkMode);
+
+            // Coordenadas del centro
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Mover fuente (en unidades del plano)
+            if(!dPaused) {
+                sourceX += (vf / dScale) * deltaTime; 
+                if(sourceX > (width/2)/dScale + 2) sourceX = -(width/2)/dScale - 2;
+
+                // Crear ondas según frecuencia
+                const interval = 1000 / ff;
+                if(time - lastWaveTime > interval) {
+                    dWaves.push({ x: sourceX, y: 0, r: 0 });
+                    lastWaveTime = time;
+                }
+            }
+
+            // Dibujar y actualizar ondas
+            dCtx.lineWidth = 1.5;
+            for(let i = dWaves.length - 1; i >= 0; i--) {
+                let w = dWaves[i];
+                if(!dPaused) w.r += (cSpeed / dScale) * deltaTime;
+                
+                let opacity = Math.max(0, 1 - w.r / 8);
+                dCtx.strokeStyle = isDarkMode ? `rgba(92, 124, 250, ${opacity})` : `rgba(67, 97, 238, ${opacity})`;
+                
+                dCtx.beginPath();
+                dCtx.arc(cx + w.x * dScale, cy - w.y * dScale, w.r * dScale, 0, Math.PI * 2);
+                dCtx.stroke();
+
+                if(w.r > 10) dWaves.splice(i, 1);
+            }
+
+            // Dibujar Fuente
+            dCtx.fillStyle = '#f72585';
+            dCtx.beginPath();
+            dCtx.arc(cx + sourceX * dScale, cy, 6, 0, Math.PI * 2);
+            dCtx.fill();
+            dCtx.strokeStyle = 'white';
+            dCtx.lineWidth = 2;
+            dCtx.stroke();
+
+            // Etiqueta de la fuente
+            dCtx.textAlign = "left";
+            dCtx.textBaseline = "alphabetic";
+            dCtx.fillStyle = isDarkMode ? 'white' : 'black';
+            dCtx.font = "bold 12px Nunito";
+            dCtx.fillText("Fuente", cx + sourceX * dScale + 10, cy - 10);
+
+            if(!dPaused) dAnim = requestAnimationFrame(animateDoppler);
+        }
+
+        // Iniciar
+        window.onload = init;
+
+    </script>
+</body>
+
+</html>
